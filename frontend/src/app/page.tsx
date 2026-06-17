@@ -187,6 +187,7 @@ function BreakdownRow({ label, value }: { label: string; value: string }) {
 
 export default function DashboardPage() {
   const [form, setForm] = useState<SellerForm>(emptyForm);
+  const [priceMode, setPriceMode] = useState<"api" | "manual">("api");
   const [invoice, setInvoice] = useState<SavedInvoice | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
@@ -265,9 +266,10 @@ export default function DashboardPage() {
       setRatesError("");
       setForm((current) => ({
         ...current,
-        domestic18kGoldPrice: marketRates.domestic18kPrice
-          ? formatNumber(marketRates.domestic18kPrice)
-          : "",
+        domestic18kGoldPrice:
+          priceMode === "api" && marketRates.domestic18kPrice
+            ? formatNumber(marketRates.domestic18kPrice)
+            : current.domestic18kGoldPrice,
         currencyRates: marketRates.currencyRates
       }));
     } catch (error) {
@@ -284,7 +286,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void loadRates();
-  }, []);
+  }, [priceMode]);
+
+  const handlePriceModeChange = (nextMode: "api" | "manual") => {
+    setPriceMode(nextMode);
+    if (nextMode === "api" && ratesInfo?.domestic18kPrice) {
+      setForm((current) => ({
+        ...current,
+        domestic18kGoldPrice: formatNumber(ratesInfo.domestic18kPrice)
+      }));
+    }
+  };
 
   const runValidation = (mode: "calculate" | "invoice") => {
     const errors = validateSellerForm(form, mode);
@@ -308,7 +320,7 @@ export default function DashboardPage() {
       ...emptyForm,
       selectedCurrency: current.selectedCurrency,
       currencyRates: current.currencyRates,
-      domestic18kGoldPrice: ratesInfo?.domestic18kPrice
+      domestic18kGoldPrice: priceMode === "api" && ratesInfo?.domestic18kPrice
         ? formatNumber(ratesInfo.domestic18kPrice)
         : ""
     }));
@@ -413,25 +425,56 @@ export default function DashboardPage() {
       >
         <div className="grid gap-4 sm:gap-5">
           <Card title="نرخ مرجع طلا" subtitle="دریافت خودکار از API و تبدیل به قیمت ۱۸ عیار">
+            <div className="mb-4 grid grid-cols-2 gap-2 rounded-[20px] bg-[var(--md-panel)] p-1">
+              <button
+                type="button"
+                onClick={() => handlePriceModeChange("api")}
+                className={`flex h-11 items-center justify-center rounded-2xl text-sm font-bold transition ${
+                  priceMode === "api"
+                    ? "bg-[var(--md-accent)] text-white shadow-sm"
+                    : "text-[var(--md-muted)] hover:bg-[var(--md-surface-solid)]"
+                }`}
+              >
+                نرخ از API
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePriceModeChange("manual")}
+                className={`flex h-11 items-center justify-center rounded-2xl text-sm font-bold transition ${
+                  priceMode === "manual"
+                    ? "bg-[var(--md-accent)] text-white shadow-sm"
+                    : "text-[var(--md-muted)] hover:bg-[var(--md-surface-solid)]"
+                }`}
+              >
+                ورود دستی نرخ
+              </button>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <Field
                 label="قیمت هر گرم طلای ۱۸ عیار"
                 error={fieldErrors.domestic18kGoldPrice}
                 helperText={
-                  ratesInfo
-                    ? `آخرین به‌روزرسانی: ${ratesInfo.updatedAt}`
-                    : isRatesLoading
-                      ? "در حال دریافت نرخ..."
-                      : "قیمت از API خوانده می‌شود."
+                  priceMode === "manual"
+                    ? "در این حالت می‌توانید نرخ دلخواه خودتان را وارد کنید."
+                    : ratesInfo
+                      ? `آخرین به‌روزرسانی: ${ratesInfo.updatedAt}`
+                      : isRatesLoading
+                        ? "در حال دریافت نرخ..."
+                        : "قیمت از API خوانده می‌شود."
                 }
                 required
               >
                 <NumberInput
                   value={form.domestic18kGoldPrice}
                   onValueChange={(value) => update("domestic18kGoldPrice", value)}
-                  readOnly
+                  readOnly={priceMode === "api"}
                   error={Boolean(fieldErrors.domestic18kGoldPrice)}
-                  placeholder="پس از دریافت API نمایش داده می‌شود"
+                  placeholder={
+                    priceMode === "api"
+                      ? "پس از دریافت API نمایش داده می‌شود"
+                      : "مثلاً ۶٬۸۵۰٬۰۰۰"
+                  }
                 />
               </Field>
 
@@ -462,8 +505,7 @@ export default function DashboardPage() {
                 <p>نرخ جهانی طلا: {ratesInfo ? `${formatNumber(ratesInfo.globalGoldPrice)} دلار/اونس` : "-"}</p>
                 <p>نرخ دلار: {ratesInfo ? `${formatNumber(ratesInfo.usdExchangeRate)} تومان` : "-"}</p>
                 <p className="text-xs">
-                  منبع:
-                  {" "}
+                  دریافت از{" "}
                   <a
                     className="underline"
                     href="https://goldprice.org"
@@ -472,7 +514,7 @@ export default function DashboardPage() {
                   >
                     GoldPrice.org
                   </a>
-                  {" + "}
+                  {" و "}
                   <a
                     className="underline"
                     href="https://www.exchangerate-api.com"
@@ -485,18 +527,28 @@ export default function DashboardPage() {
                 {ratesError ? <p className="text-[#b3261e]">{ratesError}</p> : null}
               </div>
 
-              <button
-                type="button"
-                onClick={() => void loadRates(true)}
-                disabled={isRatesLoading || isRatesRefreshing}
-                className="flex h-11 items-center justify-center gap-2 rounded-full border border-[var(--md-outline)] px-4 font-bold text-[var(--md-text)] transition hover:bg-[var(--md-surface-muted)] disabled:opacity-60"
-              >
-                <RefreshCw
-                  size={18}
-                  className={isRatesRefreshing || isRatesLoading ? "animate-spin" : ""}
-                />
-                {isRatesRefreshing || isRatesLoading ? "در حال به‌روزرسانی" : "به‌روزرسانی نرخ"}
-              </button>
+              <div className="flex flex-col items-stretch gap-2 sm:items-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handlePriceModeChange("api");
+                    void loadRates(true);
+                  }}
+                  disabled={isRatesLoading || isRatesRefreshing}
+                  className="flex h-11 items-center justify-center gap-2 rounded-full border border-[var(--md-outline)] px-4 font-bold text-[var(--md-text)] transition hover:bg-[var(--md-surface-muted)] disabled:opacity-60"
+                >
+                  <RefreshCw
+                    size={18}
+                    className={isRatesRefreshing || isRatesLoading ? "animate-spin" : ""}
+                  />
+                  {isRatesRefreshing || isRatesLoading ? "در حال به‌روزرسانی" : "به‌روزرسانی نرخ API"}
+                </button>
+                {priceMode === "manual" ? (
+                  <p className="text-xs text-[var(--md-muted)]">
+                    نرخ API همچنان برای مقایسه دریافت می‌شود، اما محاسبه با نرخ دستی انجام می‌شود.
+                  </p>
+                ) : null}
+              </div>
             </div>
           </Card>
 

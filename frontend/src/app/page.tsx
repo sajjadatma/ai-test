@@ -491,13 +491,13 @@ export default function DashboardPage() {
                   </Field>
 
                   <div className="rounded-[20px] border border-[var(--md-outline)] bg-[var(--md-surface-solid)] p-4 text-sm text-[var(--md-muted)]">
-                    <p>نرخ جهانی: {ratesInfo ? `${formatNumber(ratesInfo.globalGoldPrice)} دلار/اونس` : "-"}</p>
-                    <p className="mt-1">نرخ دلار: {ratesInfo ? `${formatNumber(ratesInfo.usdExchangeRate)} تومان` : "-"}</p>
+                    <p>طلای ۱۸ عیار ایران: {ratesInfo ? `${formatNumber(ratesInfo.domestic18kPrice)} تومان` : "-"}</p>
+                    <p className="mt-1">نرخ دلار بازار ایران: {ratesInfo ? `${formatNumber(ratesInfo.usdExchangeRate)} تومان` : "-"}</p>
                     <p className="mt-2 text-xs">
                       دریافت از{" "}
-                      <a className="underline" href="https://goldprice.org" target="_blank" rel="noreferrer">GoldPrice.org</a>
+                      <a className="underline" href="https://www.tgju.org/profile/geram18" target="_blank" rel="noreferrer">TGJU طلای ۱۸ عیار</a>
                       {" و "}
-                      <a className="underline" href="https://www.exchangerate-api.com" target="_blank" rel="noreferrer">ExchangeRate-API</a>
+                      <a className="underline" href="https://www.tgju.org/profile/price_dollar_rl" target="_blank" rel="noreferrer">TGJU دلار</a>
                     </p>
                     {ratesError ? <p className="mt-2 text-[#b3261e]">{ratesError}</p> : null}
                   </div>

@@ -56,7 +56,7 @@ export interface SavedInvoice extends CalculationResult {
 }
 
 export interface MarketRates {
-  globalGoldPrice: number;
+  globalGoldPrice: number | null;
   domestic18kPrice: number;
   usdExchangeRate: number;
   currencyRates: Record<CurrencyCode, number>;

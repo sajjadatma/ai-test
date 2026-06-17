@@ -1,76 +1,73 @@
 import { NextResponse } from "next/server";
 
-const OUNCE_TO_GRAM = 31.1034768;
+function parseTgjuPrice(html: string) {
+  const patterns = [/نرخ فعلی\s*[:：]+\s*([\d,]+)/u, /نرخ فعلی\s+([\d,]+)/u];
 
-const roundMoney = (value: number) => Math.round(value);
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) {
+      const numeric = Number(match[1].replace(/,/g, ""));
+      if (Number.isFinite(numeric) && numeric > 0) {
+        return numeric;
+      }
+    }
+  }
+
+  return null;
+}
 
 export async function GET() {
   try {
     const [goldResponse, fxResponse] = await Promise.all([
-      fetch("https://data-asg.goldprice.org/dbXRates/USD", {
+      fetch("https://www.tgju.org/profile/geram18", {
         cache: "no-store",
-        headers: {
-          Accept: "application/json"
-        }
+        headers: { Accept: "text/html" }
       }),
-      fetch("https://open.er-api.com/v6/latest/USD", {
+      fetch("https://www.tgju.org/profile/price_dollar_rl", {
         cache: "no-store",
-        headers: {
-          Accept: "application/json"
-        }
+        headers: { Accept: "text/html" }
       })
     ]);
 
     if (!goldResponse.ok || !fxResponse.ok) {
       return NextResponse.json(
-        { message: "دریافت نرخ‌های لحظه‌ای از سرویس‌های بیرونی ناموفق بود." },
+        { message: "دریافت نرخ از منبع ایرانی ناموفق بود." },
         { status: 502 }
       );
     }
 
-    const goldData = (await goldResponse.json()) as {
-      ts?: number;
-      items?: Array<{ xauPrice?: number }>;
-    };
-    const fxData = (await fxResponse.json()) as {
-      result?: string;
-      time_last_update_utc?: string;
-      rates?: Record<string, number>;
-    };
+    const [goldHtml, fxHtml] = await Promise.all([
+      goldResponse.text(),
+      fxResponse.text()
+    ]);
 
-    const xauPrice = goldData.items?.[0]?.xauPrice;
-    const usdToRial = fxData.rates?.IRR;
-    if (!xauPrice || !usdToRial || fxData.result !== "success") {
+    const domestic18kPriceRial = parseTgjuPrice(goldHtml);
+    const usdExchangeRateRial = parseTgjuPrice(fxHtml);
+
+    if (!domestic18kPriceRial || !usdExchangeRateRial) {
       return NextResponse.json(
-        { message: "پاسخ API نرخ‌ها ناقص یا نامعتبر بود." },
+        { message: "خواندن نرخ‌ها از TGJU ناموفق بود." },
         { status: 502 }
       );
     }
-
-    const usdExchangeRate = usdToRial / 10;
-    const domestic18kPrice = roundMoney(
-      ((xauPrice * usdExchangeRate) / OUNCE_TO_GRAM) * (18 / 24)
-    );
 
     return NextResponse.json({
-      globalGoldPrice: xauPrice,
-      domestic18kPrice,
-      usdExchangeRate,
+      globalGoldPrice: null,
+      domestic18kPrice: Math.round(domestic18kPriceRial / 10),
+      usdExchangeRate: Math.round(usdExchangeRateRial / 10),
       currencyRates: {
         TOMAN: 1,
         RIAL: 0.1
       },
       source: {
-        gold: "GoldPrice.org public JSON endpoint",
-        fx: "ExchangeRate-API Open Access"
+        gold: "TGJU",
+        fx: "TGJU"
       },
-      updatedAt:
-        fxData.time_last_update_utc ??
-        (goldData.ts ? new Date(goldData.ts).toISOString() : new Date().toISOString())
+      updatedAt: new Date().toISOString()
     });
   } catch {
     return NextResponse.json(
-      { message: "در ارتباط با سرویس نرخ طلا یا ارز خطا رخ داد." },
+      { message: "در ارتباط با منبع ایرانی قیمت خطا رخ داد." },
       { status: 502 }
     );
   }

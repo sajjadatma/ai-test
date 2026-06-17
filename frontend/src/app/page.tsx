@@ -16,6 +16,8 @@ import { getMarketRates, saveInvoice } from "@/lib/api";
 import { calculateGoldInvoice } from "@/lib/calculations";
 import {
   type FormErrors,
+  formatNumericInput,
+  normalizeDigits,
   normalizeSellerForm,
   validateSellerForm
 } from "@/lib/form";
@@ -28,10 +30,7 @@ import type { CurrencyCode, MarketRates, SavedInvoice, SellerForm } from "@/type
 
 const currencyOptions: Array<{ code: CurrencyCode; label: string }> = [
   { code: "TOMAN", label: "تومان" },
-  { code: "RIAL", label: "ریال" },
-  { code: "USD", label: "دلار" },
-  { code: "EUR", label: "یورو" },
-  { code: "AED", label: "درهم" }
+  { code: "RIAL", label: "ریال" }
 ];
 
 const emptyForm: SellerForm = {
@@ -44,10 +43,7 @@ const emptyForm: SellerForm = {
   selectedCurrency: "TOMAN",
   currencyRates: {
     TOMAN: 1,
-    RIAL: 0.1,
-    USD: 0,
-    EUR: 0,
-    AED: 0
+    RIAL: 0.1
   },
   weight: "",
   unit: "",
@@ -115,18 +111,30 @@ function NumberInput({
   onValueChange,
   error,
   readOnly,
-  placeholder
+  placeholder,
+  maxFractionDigits = 4
 }: {
   value: string;
   onValueChange: (value: string) => void;
   error?: boolean;
   readOnly?: boolean;
   placeholder?: string;
+  maxFractionDigits?: number;
 }) {
   return (
     <TextInput
       value={value}
       onChange={(event) => onValueChange(event.target.value)}
+      onFocus={(event) => {
+        if (!readOnly) {
+          onValueChange(normalizeDigits(event.target.value));
+        }
+      }}
+      onBlur={(event) => {
+        if (!readOnly) {
+          onValueChange(formatNumericInput(event.target.value, maxFractionDigits));
+        }
+      }}
       inputMode="decimal"
       dir="ltr"
       error={error}
@@ -153,26 +161,6 @@ function Select({
     >
       {children}
     </select>
-  );
-}
-
-function Card({
-  title,
-  subtitle,
-  children
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-[24px] border border-[var(--md-outline)] bg-[var(--md-surface-solid)] p-4 shadow-[0_10px_24px_rgba(28,27,31,0.08)] sm:p-5">
-      <div className="mb-5">
-        <h2 className="text-lg font-bold text-[var(--md-text)]">{title}</h2>
-        {subtitle ? <p className="mt-1 text-sm text-[var(--md-muted)]">{subtitle}</p> : null}
-      </div>
-      {children}
-    </section>
   );
 }
 
@@ -419,368 +407,214 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <form
-        onSubmit={handleCalculate}
-        className="no-print mx-auto grid max-w-7xl gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]"
-      >
-        <div className="grid gap-4 sm:gap-5">
-          <Card title="نرخ مرجع طلا" subtitle="دریافت خودکار از API و تبدیل به قیمت ۱۸ عیار">
-            <div className="mb-4 grid grid-cols-2 gap-2 rounded-[20px] bg-[var(--md-panel)] p-1">
-              <button
-                type="button"
-                onClick={() => handlePriceModeChange("api")}
-                className={`flex h-11 items-center justify-center rounded-2xl text-sm font-bold transition ${
-                  priceMode === "api"
-                    ? "bg-[var(--md-accent)] text-white shadow-sm"
-                    : "text-[var(--md-muted)] hover:bg-[var(--md-surface-solid)]"
-                }`}
-              >
-                نرخ از API
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePriceModeChange("manual")}
-                className={`flex h-11 items-center justify-center rounded-2xl text-sm font-bold transition ${
-                  priceMode === "manual"
-                    ? "bg-[var(--md-accent)] text-white shadow-sm"
-                    : "text-[var(--md-muted)] hover:bg-[var(--md-surface-solid)]"
-                }`}
-              >
-                ورود دستی نرخ
-              </button>
-            </div>
+      <form onSubmit={handleCalculate} className="no-print mx-auto max-w-7xl">
+        <section className="rounded-[28px] border border-[var(--md-outline)] bg-[var(--md-surface-solid)] p-4 shadow-[0_12px_32px_rgba(28,27,31,0.08)] sm:p-5 lg:min-h-[calc(100vh-10rem)] lg:overflow-hidden">
+          <div className="grid gap-5 lg:h-full lg:grid-cols-[minmax(0,1.65fr)_minmax(310px,0.75fr)] lg:gap-6">
+            <div className="grid content-start gap-5">
+              <div className="rounded-[24px] border border-[var(--md-outline)] bg-[var(--md-panel)] p-4">
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold text-[var(--md-text)]">نرخ مرجع طلا</h2>
+                    <p className="mt-1 text-sm text-[var(--md-muted)]">
+                      نرخ زنده یا نرخ دستی را برای محاسبه انتخاب کنید.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 rounded-[18px] bg-[var(--md-surface-solid)] p-1">
+                    <button
+                      type="button"
+                      onClick={() => handlePriceModeChange("api")}
+                      className={`flex h-10 items-center justify-center rounded-2xl px-3 text-xs font-bold transition sm:text-sm ${
+                        priceMode === "api"
+                          ? "bg-[var(--md-accent)] text-white shadow-sm"
+                          : "text-[var(--md-muted)] hover:bg-[var(--md-panel)]"
+                      }`}
+                    >
+                      نرخ از API
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePriceModeChange("manual")}
+                      className={`flex h-10 items-center justify-center rounded-2xl px-3 text-xs font-bold transition sm:text-sm ${
+                        priceMode === "manual"
+                          ? "bg-[var(--md-accent)] text-white shadow-sm"
+                          : "text-[var(--md-muted)] hover:bg-[var(--md-panel)]"
+                      }`}
+                    >
+                      ورود دستی
+                    </button>
+                  </div>
+                </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field
-                label="قیمت هر گرم طلای ۱۸ عیار"
-                error={fieldErrors.domestic18kGoldPrice}
-                helperText={
-                  priceMode === "manual"
-                    ? "در این حالت می‌توانید نرخ دلخواه خودتان را وارد کنید."
-                    : ratesInfo
-                      ? `آخرین به‌روزرسانی: ${ratesInfo.updatedAt}`
-                      : isRatesLoading
-                        ? "در حال دریافت نرخ..."
-                        : "قیمت از API خوانده می‌شود."
-                }
-                required
-              >
-                <NumberInput
-                  value={form.domestic18kGoldPrice}
-                  onValueChange={(value) => update("domestic18kGoldPrice", value)}
-                  readOnly={priceMode === "api"}
-                  error={Boolean(fieldErrors.domestic18kGoldPrice)}
-                  placeholder={
-                    priceMode === "api"
-                      ? "پس از دریافت API نمایش داده می‌شود"
-                      : "مثلاً ۶٬۸۵۰٬۰۰۰"
-                  }
-                />
-              </Field>
-
-              <Field
-                label="واحد نمایش مبلغ"
-                error={fieldErrors.selectedCurrency}
-                helperText="نتایج محاسبه و فاکتور با این واحد نمایش داده می‌شوند."
-                required
-              >
-                <Select
-                  value={form.selectedCurrency}
-                  onChange={(event) =>
-                    update("selectedCurrency", event.target.value as CurrencyCode)
-                  }
-                  error={Boolean(fieldErrors.selectedCurrency)}
-                >
-                  {currencyOptions.map((item) => (
-                    <option key={item.code} value={item.code}>
-                      {item.label}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-
-            <div className="mt-2 flex flex-col gap-3 rounded-[20px] bg-[var(--md-panel)] p-4 text-sm text-[var(--md-muted)] sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-1">
-                <p>نرخ جهانی طلا: {ratesInfo ? `${formatNumber(ratesInfo.globalGoldPrice)} دلار/اونس` : "-"}</p>
-                <p>نرخ دلار: {ratesInfo ? `${formatNumber(ratesInfo.usdExchangeRate)} تومان` : "-"}</p>
-                <p className="text-xs">
-                  دریافت از{" "}
-                  <a
-                    className="underline"
-                    href="https://goldprice.org"
-                    target="_blank"
-                    rel="noreferrer"
+                <div className="grid gap-4 lg:grid-cols-3">
+                  <Field
+                    label="قیمت هر گرم طلای ۱۸ عیار"
+                    error={fieldErrors.domestic18kGoldPrice}
+                    helperText={
+                      priceMode === "manual"
+                        ? "در این حالت می‌توانید نرخ دلخواه خودتان را وارد کنید."
+                        : ratesInfo
+                          ? `آخرین به‌روزرسانی: ${ratesInfo.updatedAt}`
+                          : isRatesLoading
+                            ? "در حال دریافت نرخ..."
+                            : "قیمت از API خوانده می‌شود."
+                    }
+                    required
                   >
-                    GoldPrice.org
-                  </a>
-                  {" و "}
-                  <a
-                    className="underline"
-                    href="https://www.exchangerate-api.com"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    ExchangeRate-API
-                  </a>
-                </p>
-                {ratesError ? <p className="text-[#b3261e]">{ratesError}</p> : null}
-              </div>
+                    <NumberInput
+                      value={form.domestic18kGoldPrice}
+                      onValueChange={(value) => update("domestic18kGoldPrice", value)}
+                      readOnly={priceMode === "api"}
+                      error={Boolean(fieldErrors.domestic18kGoldPrice)}
+                      placeholder={priceMode === "api" ? "پس از دریافت API" : "مثلاً 6,850,000"}
+                    />
+                  </Field>
 
-              <div className="flex flex-col items-stretch gap-2 sm:items-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    handlePriceModeChange("api");
-                    void loadRates(true);
-                  }}
-                  disabled={isRatesLoading || isRatesRefreshing}
-                  className="flex h-11 items-center justify-center gap-2 rounded-full border border-[var(--md-outline)] px-4 font-bold text-[var(--md-text)] transition hover:bg-[var(--md-surface-muted)] disabled:opacity-60"
-                >
-                  <RefreshCw
-                    size={18}
-                    className={isRatesRefreshing || isRatesLoading ? "animate-spin" : ""}
-                  />
-                  {isRatesRefreshing || isRatesLoading ? "در حال به‌روزرسانی" : "به‌روزرسانی نرخ API"}
-                </button>
-                {priceMode === "manual" ? (
+                  <Field
+                    label="واحد نمایش مبلغ"
+                    error={fieldErrors.selectedCurrency}
+                    helperText="فقط تومان و ریال"
+                    required
+                  >
+                    <Select
+                      value={form.selectedCurrency}
+                      onChange={(event) =>
+                        update("selectedCurrency", event.target.value as CurrencyCode)
+                      }
+                      error={Boolean(fieldErrors.selectedCurrency)}
+                    >
+                      {currencyOptions.map((item) => (
+                        <option key={item.code} value={item.code}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+
+                  <div className="rounded-[20px] border border-[var(--md-outline)] bg-[var(--md-surface-solid)] p-4 text-sm text-[var(--md-muted)]">
+                    <p>نرخ جهانی: {ratesInfo ? `${formatNumber(ratesInfo.globalGoldPrice)} دلار/اونس` : "-"}</p>
+                    <p className="mt-1">نرخ دلار: {ratesInfo ? `${formatNumber(ratesInfo.usdExchangeRate)} تومان` : "-"}</p>
+                    <p className="mt-2 text-xs">
+                      دریافت از{" "}
+                      <a className="underline" href="https://goldprice.org" target="_blank" rel="noreferrer">GoldPrice.org</a>
+                      {" و "}
+                      <a className="underline" href="https://www.exchangerate-api.com" target="_blank" rel="noreferrer">ExchangeRate-API</a>
+                    </p>
+                    {ratesError ? <p className="mt-2 text-[#b3261e]">{ratesError}</p> : null}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs text-[var(--md-muted)]">
-                    نرخ API همچنان برای مقایسه دریافت می‌شود، اما محاسبه با نرخ دستی انجام می‌شود.
+                    {priceMode === "manual"
+                      ? "در حالت دستی، نرخ API فقط برای مقایسه نمایش داده می‌شود."
+                      : "برای دریافت آخرین نرخ، دکمه به‌روزرسانی را بزنید."}
                   </p>
-                ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handlePriceModeChange("api");
+                      void loadRates(true);
+                    }}
+                    disabled={isRatesLoading || isRatesRefreshing}
+                    className="flex h-10 items-center justify-center gap-2 rounded-full border border-[var(--md-outline)] px-4 text-sm font-bold text-[var(--md-text)] transition hover:bg-[var(--md-surface-muted)] disabled:opacity-60"
+                  >
+                    <RefreshCw size={16} className={isRatesRefreshing || isRatesLoading ? "animate-spin" : ""} />
+                    {isRatesRefreshing || isRatesLoading ? "در حال به‌روزرسانی" : "به‌روزرسانی نرخ"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid gap-5 lg:grid-cols-2">
+                <div className="rounded-[24px] border border-[var(--md-outline)] bg-[var(--md-panel)] p-4">
+                  <h2 className="mb-4 text-lg font-bold text-[var(--md-text)]">مشخصات مشتری و فروش</h2>
+                  <div className="grid gap-4">
+                    <Field label="نام فروشگاه" error={fieldErrors.shopName} helperText="روی فاکتور نمایش داده می‌شود." required>
+                      <TextInput value={form.shopName} onChange={(event) => update("shopName", event.target.value)} error={Boolean(fieldErrors.shopName)} placeholder="مثلاً گالری طلای پارسیان" />
+                    </Field>
+                    <Field label="نام فروشنده" error={fieldErrors.sellerName} helperText="روی فاکتور نمایش داده می‌شود." required>
+                      <TextInput value={form.sellerName} onChange={(event) => update("sellerName", event.target.value)} error={Boolean(fieldErrors.sellerName)} placeholder="مثلاً علی رضایی" />
+                    </Field>
+                    <Field label="نام مشتری" error={fieldErrors.customerName} helperText="برای ذخیره و صدور فاکتور لازم است." required>
+                      <TextInput value={form.customerName} onChange={(event) => update("customerName", event.target.value)} error={Boolean(fieldErrors.customerName)} placeholder="نام مشتری" />
+                    </Field>
+                    <Field label="شماره تماس مشتری" error={fieldErrors.customerPhone} helperText="۱۰ یا ۱۱ رقم" required>
+                      <TextInput value={form.customerPhone} onChange={(event) => update("customerPhone", event.target.value)} error={Boolean(fieldErrors.customerPhone)} inputMode="tel" dir="ltr" placeholder="0912..." />
+                    </Field>
+                    <Field label="نوع کالا" error={fieldErrors.productType} helperText="مثلاً انگشتر" required>
+                      <TextInput value={form.productType} onChange={(event) => update("productType", event.target.value)} error={Boolean(fieldErrors.productType)} placeholder="نوع کالا" />
+                    </Field>
+                  </div>
+                </div>
+
+                <div className="rounded-[24px] border border-[var(--md-outline)] bg-[var(--md-panel)] p-4">
+                  <h2 className="mb-4 text-lg font-bold text-[var(--md-text)]">مشخصات محاسبه</h2>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="وزن" error={fieldErrors.weight} helperText="مثلاً 4.25" required>
+                      <NumberInput value={form.weight} onValueChange={(value) => update("weight", value)} error={Boolean(fieldErrors.weight)} placeholder="0.00" />
+                    </Field>
+                    <Field label="واحد وزن" error={fieldErrors.unit} helperText="تبدیل به گرم" required>
+                      <Select value={form.unit} onChange={(event) => update("unit", event.target.value as SellerForm["unit"])} error={Boolean(fieldErrors.unit)}>
+                        <option value="">انتخاب واحد</option>
+                        <option value="gram">گرم</option>
+                        <option value="mithqal">مثقال</option>
+                        <option value="ounce">اونس</option>
+                        <option value="kilogram">کیلوگرم</option>
+                      </Select>
+                    </Field>
+                    <Field label="عیار" error={fieldErrors.selectedKarat} helperText="مبنای تعدیل قیمت" required>
+                      <Select value={String(form.selectedKarat)} onChange={(event) => update("selectedKarat", event.target.value ? Number(event.target.value) : "")} error={Boolean(fieldErrors.selectedKarat)}>
+                        <option value="">انتخاب عیار</option>
+                        {[24, 22, 21, 18, 17, 14].map((karat) => (
+                          <option key={karat} value={karat}>{karat} عیار</option>
+                        ))}
+                      </Select>
+                    </Field>
+                    <Field label="اجرت ساخت %" error={fieldErrors.wagePercent} helperText="مثلاً 12.5" required>
+                      <NumberInput value={form.wagePercent} onValueChange={(value) => update("wagePercent", value)} error={Boolean(fieldErrors.wagePercent)} placeholder="0.00" />
+                    </Field>
+                    <Field label="سود فروشنده %" error={fieldErrors.profitPercent} helperText="مثلاً 7.25" required>
+                      <NumberInput value={form.profitPercent} onValueChange={(value) => update("profitPercent", value)} error={Boolean(fieldErrors.profitPercent)} placeholder="0.00" />
+                    </Field>
+                    <Field label="مالیات %" error={fieldErrors.taxPercent} helperText="مثلاً 9" required>
+                      <NumberInput value={form.taxPercent} onValueChange={(value) => update("taxPercent", value)} error={Boolean(fieldErrors.taxPercent)} placeholder="0.00" />
+                    </Field>
+                  </div>
+                </div>
               </div>
             </div>
-          </Card>
 
-          <Card title="مشخصات مشتری و کالا" subtitle="برای صدور فاکتور این بخش الزامی است.">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field
-                label="نام فروشگاه"
-                error={fieldErrors.shopName}
-                helperText="روی فاکتور نمایش داده می‌شود."
-                required
-              >
-                <TextInput
-                  value={form.shopName}
-                  onChange={(event) => update("shopName", event.target.value)}
-                  error={Boolean(fieldErrors.shopName)}
-                  placeholder="مثلاً گالری طلای پارسیان"
-                />
-              </Field>
-              <Field
-                label="نام فروشنده"
-                error={fieldErrors.sellerName}
-                helperText="روی فاکتور نمایش داده می‌شود."
-                required
-              >
-                <TextInput
-                  value={form.sellerName}
-                  onChange={(event) => update("sellerName", event.target.value)}
-                  error={Boolean(fieldErrors.sellerName)}
-                  placeholder="مثلاً علی رضایی"
-                />
-              </Field>
-              <Field
-                label="نام و نام خانوادگی مشتری"
-                error={fieldErrors.customerName}
-                helperText="برای ذخیره و صدور فاکتور لازم است."
-                required
-              >
-                <TextInput
-                  value={form.customerName}
-                  onChange={(event) => update("customerName", event.target.value)}
-                  error={Boolean(fieldErrors.customerName)}
-                  placeholder="نام مشتری"
-                />
-              </Field>
-              <Field
-                label="شماره تماس مشتری"
-                error={fieldErrors.customerPhone}
-                helperText="۱۰ یا ۱۱ رقم، با یا بدون صفر اول."
-                required
-              >
-                <TextInput
-                  value={form.customerPhone}
-                  onChange={(event) => update("customerPhone", event.target.value)}
-                  error={Boolean(fieldErrors.customerPhone)}
-                  inputMode="tel"
-                  dir="ltr"
-                  placeholder="0912..."
-                />
-              </Field>
-              <Field
-                label="نوع کالا"
-                error={fieldErrors.productType}
-                helperText="مثلاً انگشتر، گردنبند یا دستبند."
-                required
-              >
-                <TextInput
-                  value={form.productType}
-                  onChange={(event) => update("productType", event.target.value)}
-                  error={Boolean(fieldErrors.productType)}
-                  placeholder="نوع کالا"
-                />
-              </Field>
-            </div>
-          </Card>
+            <aside className="grid content-start gap-4 lg:h-full">
+              <div className="rounded-[24px] border border-[var(--md-outline)] bg-[var(--md-panel)] p-4">
+                <h2 className="mb-4 text-lg font-bold text-[var(--md-text)]">خلاصه محاسبه</h2>
+                <BreakdownRow label="وزن تبدیل‌شده" value={`${formatNumber(totals.convertedWeightInGram)} گرم`} />
+                <BreakdownRow label="قیمت هر گرم" value={money(totals.adjustedGoldPrice)} />
+                <BreakdownRow label="قیمت خام طلا" value={money(totals.rawGoldPrice)} />
+                <BreakdownRow label="اجرت ساخت" value={money(totals.wageAmount)} />
+                <BreakdownRow label="سود فروشنده" value={money(totals.profitAmount)} />
+                <BreakdownRow label="جمع قبل از مالیات" value={money(totals.subtotal)} />
+                <BreakdownRow label="مالیات" value={money(totals.taxAmount)} />
+                <div className="mt-4 rounded-[24px] bg-[var(--md-accent-soft)] px-4 py-4 text-[var(--md-accent-strong)]">
+                  <p className="text-sm font-medium">قابل پرداخت</p>
+                  <p className="mt-1 text-2xl font-black leading-10">{money(totals.finalPrice)}</p>
+                </div>
+              </div>
 
-          <Card title="وزن، عیار و کارمزدها" subtitle="همه اعداد را می‌توانید با نقطه اعشاری وارد کنید.">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Field
-                label="وزن"
-                error={fieldErrors.weight}
-                helperText="مثلاً 4.25"
-                required
-              >
-                <NumberInput
-                  value={form.weight}
-                  onValueChange={(value) => update("weight", value)}
-                  error={Boolean(fieldErrors.weight)}
-                  placeholder="0.00"
-                />
-              </Field>
-
-              <Field
-                label="واحد وزن"
-                error={fieldErrors.unit}
-                helperText="واحد انتخابی به گرم تبدیل می‌شود."
-                required
-              >
-                <Select
-                  value={form.unit}
-                  onChange={(event) =>
-                    update("unit", event.target.value as SellerForm["unit"])
-                  }
-                  error={Boolean(fieldErrors.unit)}
-                >
-                  <option value="">انتخاب واحد</option>
-                  <option value="gram">گرم</option>
-                  <option value="mithqal">مثقال</option>
-                  <option value="ounce">اونس</option>
-                  <option value="kilogram">کیلوگرم</option>
-                </Select>
-              </Field>
-
-              <Field
-                label="عیار"
-                error={fieldErrors.selectedKarat}
-                helperText="قیمت ۱۸ عیار بر همین اساس تعدیل می‌شود."
-                required
-              >
-                <Select
-                  value={String(form.selectedKarat)}
-                  onChange={(event) =>
-                    update(
-                      "selectedKarat",
-                      event.target.value ? Number(event.target.value) : ""
-                    )
-                  }
-                  error={Boolean(fieldErrors.selectedKarat)}
-                >
-                  <option value="">انتخاب عیار</option>
-                  {[24, 22, 21, 18, 17, 14].map((karat) => (
-                    <option key={karat} value={karat}>
-                      {karat} عیار
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-
-              <Field
-                label="درصد اجرت ساخت"
-                error={fieldErrors.wagePercent}
-                helperText="مثلاً 12.5"
-                required
-              >
-                <NumberInput
-                  value={form.wagePercent}
-                  onValueChange={(value) => update("wagePercent", value)}
-                  error={Boolean(fieldErrors.wagePercent)}
-                  placeholder="0.00"
-                />
-              </Field>
-
-              <Field
-                label="درصد سود فروشنده"
-                error={fieldErrors.profitPercent}
-                helperText="مثلاً 7.25"
-                required
-              >
-                <NumberInput
-                  value={form.profitPercent}
-                  onValueChange={(value) => update("profitPercent", value)}
-                  error={Boolean(fieldErrors.profitPercent)}
-                  placeholder="0.00"
-                />
-              </Field>
-
-              <Field
-                label="درصد مالیات"
-                error={fieldErrors.taxPercent}
-                helperText="معمولاً مقدار مثبت و محدود."
-                required
-              >
-                <NumberInput
-                  value={form.taxPercent}
-                  onValueChange={(value) => update("taxPercent", value)}
-                  error={Boolean(fieldErrors.taxPercent)}
-                  placeholder="0.00"
-                />
-              </Field>
-            </div>
-          </Card>
-        </div>
-
-        <aside className="grid content-start gap-4 sm:gap-5 lg:sticky lg:top-4 lg:self-start">
-          <Card title="خلاصه محاسبه" subtitle="مبالغ بر اساس واحد انتخابی شما نمایش داده می‌شوند.">
-            <BreakdownRow
-              label="وزن تبدیل‌شده"
-              value={`${formatNumber(totals.convertedWeightInGram)} گرم`}
-            />
-            <BreakdownRow
-              label="قیمت هر گرم"
-              value={money(totals.adjustedGoldPrice)}
-            />
-            <BreakdownRow label="قیمت خام طلا" value={money(totals.rawGoldPrice)} />
-            <BreakdownRow label="اجرت ساخت" value={money(totals.wageAmount)} />
-            <BreakdownRow label="سود فروشنده" value={money(totals.profitAmount)} />
-            <BreakdownRow label="جمع قبل از مالیات" value={money(totals.subtotal)} />
-            <BreakdownRow label="مالیات" value={money(totals.taxAmount)} />
-            <div className="mt-4 rounded-[24px] bg-[var(--md-accent-soft)] px-4 py-4 text-[var(--md-accent-strong)]">
-              <p className="text-sm font-medium">قابل پرداخت</p>
-              <p className="mt-1 text-2xl font-black leading-10 sm:text-3xl">
-                {money(totals.finalPrice)}
-              </p>
-            </div>
-          </Card>
-
-          <div className="rounded-[24px] border border-[var(--md-outline)] bg-[var(--md-surface-solid)] p-4 shadow-[0_8px_24px_rgba(28,27,31,0.08)]">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
-              <button
-                type="submit"
-                className="flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--md-accent)] px-5 font-bold text-white transition hover:brightness-110"
-              >
-                <Calculator size={18} /> محاسبه
-              </button>
-              <button
-                type="button"
-                onClick={handleReset}
-                className="flex h-12 items-center justify-center gap-2 rounded-full border border-[var(--md-outline-strong)] bg-transparent px-5 font-bold text-[var(--md-text)] transition hover:bg-[var(--md-surface-muted)]"
-              >
-                <RotateCcw size={18} /> پاک کردن فرم
-              </button>
-              <button
-                type="button"
-                onClick={handleGenerateInvoice}
-                disabled={isSaving || isRatesLoading}
-                className="sm:col-span-2 lg:col-span-1 flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--md-accent-soft)] px-5 font-bold text-[var(--md-accent-strong)] transition hover:brightness-95 disabled:opacity-60"
-              >
-                {isSaving ? <Save size={18} /> : <FileText size={18} />}
-                {isSaving ? "در حال صدور" : "صدور فاکتور"}
-              </button>
-            </div>
+              <div className="rounded-[24px] border border-[var(--md-outline)] bg-[var(--md-surface-solid)] p-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                  <button type="submit" className="flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--md-accent)] px-5 font-bold text-white transition hover:brightness-110">
+                    <Calculator size={18} /> محاسبه
+                  </button>
+                  <button type="button" onClick={handleReset} className="flex h-12 items-center justify-center gap-2 rounded-full border border-[var(--md-outline-strong)] bg-transparent px-5 font-bold text-[var(--md-text)] transition hover:bg-[var(--md-surface-muted)]">
+                    <RotateCcw size={18} /> پاک کردن فرم
+                  </button>
+                  <button type="button" onClick={handleGenerateInvoice} disabled={isSaving || isRatesLoading} className="flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--md-accent-soft)] px-5 font-bold text-[var(--md-accent-strong)] transition hover:brightness-95 disabled:opacity-60">
+                    {isSaving ? <Save size={18} /> : <FileText size={18} />} {isSaving ? "در حال صدور" : "صدور فاکتور"}
+                  </button>
+                </div>
+              </div>
+            </aside>
           </div>
-        </aside>
+        </section>
       </form>
 
       {isInvoiceOpen && invoice ? (

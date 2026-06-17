@@ -48,6 +48,17 @@ export function parseLocalizedNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+export function formatNumericInput(value: string, maxFractionDigits = 4) {
+  const parsed = parseLocalizedNumber(value);
+  if (parsed === null) {
+    return "";
+  }
+
+  return new Intl.NumberFormat("fa-IR", {
+    maximumFractionDigits: maxFractionDigits
+  }).format(parsed);
+}
+
 export function normalizePhoneNumber(value: string) {
   return normalizeDigits(value).replace(/\D/g, "");
 }

@@ -40,16 +40,7 @@ export async function GET() {
 
     const xauPrice = goldData.items?.[0]?.xauPrice;
     const usdToRial = fxData.rates?.IRR;
-    const eurPerUsd = fxData.rates?.EUR;
-    const aedPerUsd = fxData.rates?.AED;
-
-    if (
-      !xauPrice ||
-      !usdToRial ||
-      !eurPerUsd ||
-      !aedPerUsd ||
-      fxData.result !== "success"
-    ) {
+    if (!xauPrice || !usdToRial || fxData.result !== "success") {
       return NextResponse.json(
         { message: "پاسخ API نرخ‌ها ناقص یا نامعتبر بود." },
         { status: 502 }
@@ -67,10 +58,7 @@ export async function GET() {
       usdExchangeRate,
       currencyRates: {
         TOMAN: 1,
-        RIAL: 0.1,
-        USD: usdExchangeRate,
-        EUR: usdExchangeRate / eurPerUsd,
-        AED: usdExchangeRate / aedPerUsd
+        RIAL: 0.1
       },
       source: {
         gold: "GoldPrice.org public JSON endpoint",

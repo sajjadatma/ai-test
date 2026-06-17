@@ -35,16 +35,7 @@ marketRatesRouter.get("/", async (_req, res, next) => {
 
     const xauPrice = goldData.items?.[0]?.xauPrice;
     const usdToRial = fxData.rates?.IRR;
-    const eurPerUsd = fxData.rates?.EUR;
-    const aedPerUsd = fxData.rates?.AED;
-
-    if (
-      !xauPrice ||
-      !usdToRial ||
-      !eurPerUsd ||
-      !aedPerUsd ||
-      fxData.result !== "success"
-    ) {
+    if (!xauPrice || !usdToRial || fxData.result !== "success") {
       res.status(502).json({
         message: "پاسخ API نرخ‌ها ناقص یا نامعتبر بود."
       });
@@ -62,10 +53,7 @@ marketRatesRouter.get("/", async (_req, res, next) => {
       usdExchangeRate,
       currencyRates: {
         TOMAN: 1,
-        RIAL: 0.1,
-        USD: usdExchangeRate,
-        EUR: usdExchangeRate / eurPerUsd,
-        AED: usdExchangeRate / aedPerUsd
+        RIAL: 0.1
       },
       source: {
         gold: "GoldPrice.org",

@@ -2,10 +2,7 @@ import type { CurrencyCode } from "@/types/invoice";
 
 export const currencyLabels: Record<CurrencyCode, string> = {
   TOMAN: "تومان",
-  RIAL: "ریال",
-  USD: "دلار",
-  EUR: "یورو",
-  AED: "درهم"
+  RIAL: "ریال"
 };
 
 export const tomanFormatter = new Intl.NumberFormat("fa-IR", {
@@ -44,7 +41,7 @@ export function formatCurrencyAmount(
   );
 
   const formatter = new Intl.NumberFormat("fa-IR", {
-    maximumFractionDigits: selectedCurrency === "TOMAN" || selectedCurrency === "RIAL" ? 0 : 2
+    maximumFractionDigits: 0
   });
 
   return `${formatter.format(numericValue)} ${currencyLabels[selectedCurrency]}`;

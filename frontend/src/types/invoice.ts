@@ -1,5 +1,5 @@
 export type UnitCode = "gram" | "mithqal" | "ounce" | "kilogram";
-export type CurrencyCode = "TOMAN" | "RIAL" | "USD" | "EUR" | "AED";
+export type CurrencyCode = "TOMAN" | "RIAL";
 
 export interface SellerForm {
   shopName: string;

@@ -1,0 +1,20 @@
+{
+  "name": "persian-gold-shop-pos-mvp",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace backend\" \"npm run dev --workspace frontend\"",
+    "start": "concurrently \"npm run start --workspace backend\" \"npm run start --workspace frontend\"",
+    "build": "npm run build --workspace backend && npm run build --workspace frontend",
+    "typecheck": "npm run typecheck --workspace backend && npm run typecheck --workspace frontend",
+    "lint": "npm run lint --workspace frontend",
+    "db:migrate": "psql \"$DATABASE_URL\" -f database/schema.sql"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

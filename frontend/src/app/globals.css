@@ -1,0 +1,128 @@
+@import url("https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --md-bg:
+    radial-gradient(circle at top right, rgba(103, 80, 164, 0.08), transparent 28%),
+    linear-gradient(180deg, #f8f2ff 0%, #f6f7fb 42%, #eef2f9 100%);
+  --md-text: #1d1b20;
+  --md-surface: rgba(255, 251, 254, 0.9);
+  --md-surface-solid: #fffbfe;
+  --md-surface-muted: #f7f2fa;
+  --md-panel: #fcf8ff;
+  --md-outline: #e7e0ec;
+  --md-outline-strong: #7a757f;
+  --md-muted: #625b71;
+  --md-accent: #6750a4;
+  --md-accent-strong: #4f378a;
+  --md-accent-soft: #e8def8;
+  --md-toast: #313033;
+}
+
+body[data-theme="dark"] {
+  --md-bg:
+    radial-gradient(circle at top right, rgba(208, 188, 255, 0.12), transparent 28%),
+    linear-gradient(180deg, #141218 0%, #19161d 42%, #12131a 100%);
+  --md-text: #e6e0e9;
+  --md-surface: rgba(29, 27, 32, 0.88);
+  --md-surface-solid: #1d1b20;
+  --md-surface-muted: #211f26;
+  --md-panel: #1f1b24;
+  --md-outline: #49454f;
+  --md-outline-strong: #938f99;
+  --md-muted: #cac4d0;
+  --md-accent: #d0bcff;
+  --md-accent-strong: #b69df8;
+  --md-accent-soft: #4a4458;
+  --md-toast: #e6e0e9;
+}
+
+body {
+  margin: 0;
+  background: var(--md-bg);
+  color: var(--md-text);
+  font-family: "Vazirmatn", Tahoma, Arial, sans-serif;
+  transition: background 220ms ease, color 220ms ease;
+  overflow-x: hidden;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  letter-spacing: 0;
+}
+
+input[type="text"],
+input[type="tel"],
+input[type="search"],
+input[type="number"],
+input[type="email"],
+select,
+textarea {
+  font-size: 16px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--md-accent) 28%, transparent);
+}
+
+@media print {
+  body {
+    background: white;
+    color: #111827;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-area {
+    display: block !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    background: white !important;
+    color: #111827 !important;
+  }
+
+  .invoice-modal {
+    position: static !important;
+    inset: auto !important;
+    padding: 0 !important;
+    background: white !important;
+    backdrop-filter: none !important;
+  }
+
+  .invoice-modal-shell {
+    height: auto !important;
+    max-width: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .page-shell {
+    padding: 0 !important;
+    background: white !important;
+  }
+}
